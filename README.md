@@ -1,114 +1,87 @@
-# Simple Movie Recommender System
+# 🎬 Item-Based Collaborative Filtering Recommender System
 
 ---
 
-## Gambaran Umum Proyek
+## 📌 Project Overview
 
-Pernah bingung mau nonton film apa lagi? Nah, proyek ini solusinya! Saya membangun sistem rekomendasi film sederhana yang bisa menyarankan film baru berdasarkan selera Anda atau, lebih tepatnya, berdasarkan pola rating dari pengguna lain yang memiliki selera serupa. Ini seperti punya teman yang tahu film-film keren yang mungkin Anda lewatkan!
-
-Proyek ini fokus pada implementasi **Item-Based Collaborative Filtering**, sebuah teknik yang banyak digunakan dalam sistem rekomendasi di platform besar.
+This project implements an **Item-Based Collaborative Filtering** recommendation engine utilizing the MovieLens benchmark dataset. Instead of profiling individual user preferences, the algorithm evaluates global rating co-occurrence patterns across films to compute cosine similarity scores and recommend top affinity titles.
 
 ---
 
-## Dataset
+## 📊 Dataset Structure
 
-Dataset yang digunakan adalah **MovieLens ml-latest-small**, salah satu dataset standar untuk penelitian dan pengembangan sistem rekomendasi. Dataset ini berisi koleksi rating film yang diberikan oleh pengguna.
+Built on the official **MovieLens Latest Small Dataset** from GroupLens Research:
 
-* **Sumber**: [MovieLens Latest Datasets](https://grouplens.org/datasets/movielens/latest/)
-* **File Utama**:
-    * `ratings.csv`: Berisi data rating pengguna terhadap film (`userId`, `movieId`, `rating`, `timestamp`).
-    * `movies.csv`: Berisi informasi film (`movieId`, `title`, `genres`).
+* **Ratings Schema (`ratings.csv`):** 100,836 ratings across 9,742 movies by 610 users (`userId`, `movieId`, `rating`, `timestamp`).
+* **Movies Schema (`movies.csv`):** Movie titles and genre designations (`movieId`, `title`, `genres`).
 
 ---
 
-## Alur Kerja Data Science
+## 🔬 Mathematical Methodology
 
-Proyek ini mengikuti tahapan dasar pembangunan model Machine Learning:
+### 1. User-Item Interaction Matrix
+The merged rating stream is reshaped into a high-dimensional pivot matrix $R \in \mathbb{R}^{M 	imes U}$ where rows represent movies ($M$), columns represent users ($U$), and entries $r_{m,u}$ denote user ratings. Unrated pairings are zero-filled.
 
-### 1. Pengumpulan & Pemahaman Data
-* Memuat `ratings.csv` dan `movies.csv` ke dalam Pandas DataFrame.
-* Melakukan inspeksi awal data untuk memahami struktur, tipe data, dan keberadaan nilai yang hilang.
+### 2. Cosine Similarity Metric
+Item-item similarity is computed via the Cosine Similarity operator across rating vectors $ec{u}$ and $ec{v}$:
 
-### 2. Pra-pemrosesan Data
-* **Menggabungkan Data**: Menggabungkan `ratings_df` dan `movies_df` berdasarkan `movieId` untuk mendapatkan informasi judul film pada setiap baris rating.
-* **Membuat Matriks Pengguna-Item**: Mengubah data yang digabungkan menjadi matriks pivot (`user_movie_matrix`) di mana baris mewakili `userId`, kolom mewakili `title` (judul film), dan nilai sel adalah `rating` yang diberikan. Sel yang kosong diisi dengan `NaN` (Not a Number) karena pengguna belum memberikan rating pada film tersebut.
+$$	ext{Similarity}(ec{u}, ec{v}) = rac{ec{u} \cdot ec{v}}{\|ec{u}\|_2 \|ec{v}\|_2}$$
 
-### 3. Pembangunan Model Rekomendasi (Item-Based Collaborative Filtering)
-* **Transpose Matriks**: Mengubah `user_movie_matrix` menjadi `movie_user_matrix` (baris adalah film, kolom adalah pengguna) agar memudahkan perhitungan kesamaan antar film.
-* **Menghitung Kesamaan Item**: Menggunakan **Cosine Similarity** untuk menghitung tingkat kesamaan antara setiap pasang film berdasarkan pola rating pengguna. Nilai `NaN` diisi dengan 0 sebelum perhitungan kesamaan. Hasilnya adalah `item_similarity_df`, sebuah matriks di mana setiap sel menunjukkan kesamaan antara dua film.
-
-### 4. Fungsi Rekomendasi
-* Membuat fungsi `get_similar_movies()` yang menerima `movie_title` (judul film yang disukai) dan `num_recommendations` sebagai input.
-* Fungsi ini mencari film-film yang paling mirip dengan film input dari `item_similarity_df` dan mengembalikan daftar rekomendasi teratas.
-
-### 5. Evaluasi & Contoh Hasil
-
-Evaluasi sistem rekomendasi sederhana ini dilakukan secara kualitatif dengan melihat relevansi rekomendasi yang dihasilkan.
-
-* **Contoh Rekomendasi 'Toy Story (1995)':**
-    ```
-    Jika Anda menyukai 'Toy Story (1995)', mungkin Anda juga menyukai:
-    title
-    Toy Story 2 (1999)                                   0.572601
-    Jurassic Park (1993)                                 0.565637
-    Independence Day (a.k.a. ID4) (1996)                 0.564262
-    Star Wars: Episode IV - A New Hope (1977)            0.557388
-    Forrest Gump (1994)                                  0.547096
-    Lion King, The (1994)                                0.541145
-    Star Wars: Episode VI - Return of the Jedi (1983)    0.541089
-    Mission: Impossible (1996)                           0.538913
-    Groundhog Day (1993)                                 0.534169
-    Back to the Future (1985)                            0.530381
-    Name: Toy Story (1995), dtype: float64
-    ```
-
-* **Contoh Rekomendasi 'Finding Nemo (2003)':**
-    ```
-    Jika Anda menyukai 'Finding Nemo (2003)', mungkin Anda juga menyukai:
-    title
-    Incredibles, The (2004)                                          0.726374
-    Shrek (2001)                                                     0.701435
-    Monsters, Inc. (2001)                                            0.697340
-    Pirates of the Caribbean: The Curse of the Black Pearl (2003)    0.652265
-    Shrek 2 (2004)                                                   0.625074
-    Catch Me If You Can (2002)                                       0.594174
-    Lord of the Rings: The Return of the King, The (2003)            0.587321
-    Lord of the Rings: The Two Towers, The (2002)                    0.568078
-    Harry Potter and the Prisoner of Azkaban (2004)                  0.560267
-    Ocean's Eleven (2001)                                            0.556801
-    Name: Finding Nemo (2003), dtype: float64
-    ```
-
-* **Wawasan**: Rekomendasi yang dihasilkan cukup relevan, seringkali menyarankan sekuel, film dengan genre serupa, atau film-film populer lain yang ditonton oleh demografi penonton yang sama. Ini menunjukkan bahwa pendekatan Collaborative Filtering Item-Based efektif dalam menemukan pola kesamaan selera di antara pengguna.
+The resulting symmetric similarity matrix $S \in \mathbb{R}^{M 	imes M}$ enables sub-second nearest-neighbor retrieval for any selected movie title.
 
 ---
 
-## Bagaimana Menjalankan Program Ini?
+## 💡 Recommendation Examples
 
-1.  **Clone repositori ini:**
-    ```bash
-    git clone [https://github.com/YourGitHubUsername/simple-movie-recommender.git](https://github.com/YourGitHubUsername/simple-movie-recommender.git)
-    cd simple-movie-recommender
-    ```
-2.  **Unduh Dataset:**
-    Unduh file `ml-latest-small.zip` dari [MovieLens Latest Datasets](https://grouplens.org/datasets/movielens/latest/). Ekstrak file ZIP tersebut, dan Anda akan menemukan `ratings.csv` serta `movies.csv`.
-3.  **Tempatkan Dataset:**
-    Unggah kedua file CSV (`ratings.csv` dan `movies.csv`) ke Google Drive Anda. **Sesuaikan `base_path`** dalam notebook Colab Anda agar menunjuk ke folder tempat Anda menyimpan dataset.
-4.  **Buka di Google Colab:**
-    Buka file `Simple_Recommendation_System.ipynb` di Google Colab. Pastikan Anda sudah *mount* Google Drive Anda di Colab.
-5.  **Jalankan Sel-sel Kode:**
-    Jalankan setiap sel kode secara berurutan (`Runtime > Run all`) untuk mereplikasi seluruh proses pembangunan sistem rekomendasi.
+### Query: `Toy Story (1995)`
+```text
+Top-10 Recommended Movies:
+1. Toy Story 2 (1999)                                    [Similarity: 0.5726]
+2. Jurassic Park (1993)                                  [Similarity: 0.5656]
+3. Independence Day (1996)                               [Similarity: 0.5643]
+4. Star Wars: Episode IV - A New Hope (1977)             [Similarity: 0.5574]
+5. Forrest Gump (1994)                                   [Similarity: 0.5471]
+6. The Lion King (1994)                                  [Similarity: 0.5411]
+7. Star Wars: Episode VI - Return of the Jedi (1983)     [Similarity: 0.5411]
+8. Mission: Impossible (1996)                            [Similarity: 0.5389]
+9. Groundhog Day (1993)                                  [Similarity: 0.5342]
+10. Back to the Future (1985)                            [Similarity: 0.5304]
+```
+
+### Query: `Finding Nemo (2003)`
+```text
+Top-10 Recommended Movies:
+1. The Incredibles (2004)                                [Similarity: 0.7264]
+2. Shrek (2001)                                          [Similarity: 0.7014]
+3. Monsters, Inc. (2001)                                 [Similarity: 0.6973]
+4. Pirates of the Caribbean: Curse of Black Pearl (2003) [Similarity: 0.6523]
+5. Shrek 2 (2004)                                        [Similarity: 0.6251]
+6. Catch Me If You Can (2002)                            [Similarity: 0.5942]
+7. The Lord of the Rings: Return of the King (2003)      [Similarity: 0.5873]
+8. The Lord of the Rings: The Two Towers (2002)          [Similarity: 0.5681]
+9. Harry Potter and Prisoner of Azkaban (2004)           [Similarity: 0.5603]
+10. Ocean's Eleven (2001)                                [Similarity: 0.5568]
+```
 
 ---
 
-## Teknologi yang Digunakan
+## 🚀 Execution & Setup Instructions
 
-* **Python**
-* **Pandas**
-* **NumPy**
-* **Scikit-learn** (untuk `cosine_similarity`)
-* **Matplotlib** (opsional, untuk visualisasi jika ditambahkan)
-* **Seaborn** (opsional, untuk visualisasi jika ditambahkan)
-* **Google Colab**
+1. **Repository Cloning:**
+   ```bash
+   git clone https://github.com/pranataa-labs/Item-Based-Collaborative-Filtering.git
+   cd Item-Based-Collaborative-Filtering
+   ```
+2. **Download MovieLens Dataset:**
+   Extract `ratings.csv` and `movies.csv` from [GroupLens](https://grouplens.org/datasets/movielens/latest/).
+3. **Run Notebook:**
+   Open `Simple_Recommendation_System.ipynb` in Google Colab or JupyterLab and execute all cells.
 
 ---
+
+## 🛠️ Technology Stack
+
+* **Python 3.10+**
+* **Pandas & NumPy** (Matrix operations & pivot reshaping)
+* **Scikit-Learn** (`cosine_similarity`)
+* **Google Colab & JupyterLab**
